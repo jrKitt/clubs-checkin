@@ -18,9 +18,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { studentID, id, name, faculty, foodType, group, registeredAt, checkInStatus, foodNote } = body;
 
-    // ถ้ามี studentID ให้ค้นหาตั๋วจาก studentID
     if (studentID && !id && !name && !faculty && !foodType && !registeredAt) {
-      const snapshot = await db.collection("e-tickets").where("studentID", "==", studentID).limit(1).get();
+      const snapshot = await db.collection("club-etickets").where("studentID", "==", studentID).limit(1).get();
       if (snapshot.empty) {
         return NextResponse.json({ error: "ไม่พบตั๋ว" }, { status: 404 });
       }
@@ -28,7 +27,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ticket });
     }
 
-    // อัปเดต checkInStatus
     if (id && typeof checkInStatus === "boolean") {
       const ticketRef = db.collection("e-tickets").doc(id);
       const ticketSnap = await ticketRef.get();
@@ -40,7 +38,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Check-in success", ticket: updated });
     }
 
-    // สร้างตั๋วใหม่
     if (!id || !studentID || !name || !faculty || !foodType || !registeredAt) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }

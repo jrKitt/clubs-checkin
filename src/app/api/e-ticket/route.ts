@@ -43,8 +43,8 @@ export async function POST(req: NextRequest) {
       group: group ?? "",
       registeredAt,
       checkInStatus: checkInStatus ?? false,
-      point: point ?? 0, // เพิ่ม point โดยค่าเริ่มต้น = 0
-    });
+      point: point ?? 0,
+        });
     const ticket = (await ticketRef.get()).data();
     return NextResponse.json({ message: "Create success", ticket });
   } catch {

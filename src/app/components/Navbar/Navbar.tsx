@@ -58,6 +58,13 @@ export default function Navbar() {
                     </Link>
                 
                     <Link
+                        href="/leaderboard"
+                        className="px-4 py-2 text-white hover:text-blue-200 rounded-md text-sm font-medium transition-colors duration-200 relative group"
+                    >
+                        ตารางคะแนน
+                        <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full"></span>
+                    </Link>
+                    <Link
                         href="https://www.smocp.com/"
                         className="px-4 py-2 text-white hover:text-blue-200 rounded-md text-sm font-medium transition-colors duration-200 relative group"
                     >
@@ -109,6 +116,13 @@ export default function Navbar() {
                         }}
                     >
                         ลงทะเบียนกิจกรรม
+                    </Link>
+                    <Link
+                        href="/leaderboard"
+                        className="block px-3 py-2 rounded-md text-base font-medium text-white hover:bg-[#3f40b5] transition-colors duration-200"
+                        onClick={() => setMenuOpen(false)}
+                    >
+                        ตารางคะแนน
                     </Link>
                     <Link
                         href="https://www.smocp.com/"

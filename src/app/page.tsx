@@ -213,7 +213,7 @@ export default function Home() {
             <Image src="/SMOLOGO.webp" alt="Logo" width={48} height={48} className="h-12 mr-3" priority />
             <div>
               <h1 className="text-2xl font-bold text-blue-800">ระบบลงทะเบียน</h1>
-              <p className="text-sm text-gray-600">CP.MINECOM OVERWORLD 2025</p>
+              <p className="text-sm text-gray-600">CPCRAFT OVERWORLD 2025</p>
             </div>
           </div>
         </header>

@@ -2,6 +2,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 
+interface ClubCheckIn {
+  clubName: string;
+  checkInAt: string;
+  adminUsername: string;
+  pointsAwarded: number;
+}
+
 interface Ticket {
   id: string;
   studentID: string;
@@ -9,6 +16,7 @@ interface Ticket {
   faculty?: string;
   group?: string;
   checkInStatus: boolean;
+  clubCheckIns?: ClubCheckIn[];
 }
 
 export default function QrcodeCheckin() {
@@ -57,20 +65,22 @@ export default function QrcodeCheckin() {
             setScanning(false);
             return;
           }
-          qr.start(
-            cameraId,
-            {
-              fps: 10,
-              qrbox: { width: 250, height: 250 },
-              aspectRatio: 1.0,
-            },
-            onScanSuccess,
-            () => {}
-          ).catch((err) => {
-            setResult("ไม่สามารถเปิดกล้องได้: " + err);
-            setResultType("error");
-            setScanning(false);
-          });
+          qr
+            .start(
+              cameraId,
+              {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0,
+              },
+              onScanSuccess,
+              () => {}
+            )
+            .catch((err) => {
+              setResult("ไม่สามารถเปิดกล้องได้: " + err);
+              setResultType("error");
+              setScanning(false);
+            });
         })
         .catch(() => {
           setResult("ไม่พบกล้องบนอุปกรณ์นี้");
@@ -141,14 +151,57 @@ export default function QrcodeCheckin() {
     setResult("");
     setResultType("");
     try {
+      // ดึง adminRole จาก localStorage
+      const adminRoleRaw =
+        typeof window !== "undefined"
+          ? localStorage.getItem("adminRole")
+          : null;
+      let adminRole = null;
+      if (adminRoleRaw) {
+        try {
+          adminRole = JSON.parse(adminRoleRaw);
+        } catch {}
+      }
+      if (
+        !adminRole ||
+        !adminRole.username ||
+        !adminRole.clubName ||
+        !adminRole.role
+      ) {
+        setResult("ไม่พบข้อมูลผู้ดูแลหรือ session หมดอายุ กรุณา login ใหม่");
+        setResultType("error");
+        setLoading(false);
+        return;
+      }
+
+      // ตรวจสอบว่าเคยเช็คอินชมรมนี้แล้วหรือยัง (ฝั่ง client)
+      const clubCheckIns = ticket.clubCheckIns || [];
+      const alreadyCheckedIn = clubCheckIns.some((c) => c.clubName === adminRole.clubName);
+      if (alreadyCheckedIn) {
+        setResult("นักศึกษาได้เช็คอินที่ชมรมนี้แล้ว");
+        setResultType("error");
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch("/api/e-ticket-checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ studentID: ticket.studentID }),
+        body: JSON.stringify({ studentID: ticket.studentID, adminRole }),
       });
       const data = await res.json();
       if (res.ok) {
-        const updatedTicket = { ...ticket, checkInStatus: true };
+        // อัปเดต clubCheckIns ด้วยข้อมูลใหม่จาก backend ถ้ามี
+        const updatedTicket = {
+          ...ticket,
+          checkInStatus: true,
+          clubCheckIns: data.ticket?.clubCheckIns || [...clubCheckIns, {
+            clubName: adminRole.clubName,
+            checkInAt: new Date().toISOString(),
+            adminUsername: adminRole.username,
+            pointsAwarded: 100
+          }]
+        };
         setTicket(updatedTicket);
         setResult("เช็คอินสำเร็จ");
         setResultType("success");
@@ -178,8 +231,19 @@ export default function QrcodeCheckin() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
-    if (role !== "admin") {
+    // ต้องเป็น club_admin เท่านั้น
+    const adminRoleRaw =
+      typeof window !== "undefined"
+        ? localStorage.getItem("adminRole")
+        : null;
+    let role = null;
+    if (adminRoleRaw) {
+      try {
+        const adminRole = JSON.parse(adminRoleRaw);
+        role = adminRole.role;
+      } catch {}
+    }
+    if (role !== "club_admin") {
       setIsAdmin(false);
     } else {
       setIsAdmin(true);
@@ -401,12 +465,14 @@ export default function QrcodeCheckin() {
                   </h3>
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
-                      ticket.checkInStatus
+                      (ticket.clubCheckIns && ticket.clubCheckIns.some((c) => c.clubName === (JSON.parse(localStorage.getItem('adminRole') || '{}').clubName || '')))
                         ? "bg-green-100 text-green-800"
                         : "bg-yellow-100 text-yellow-800"
                     }`}
                   >
-                    {ticket.checkInStatus ? "เช็คอินแล้ว" : "ยังไม่เช็คอิน"}
+                    {(ticket.clubCheckIns && ticket.clubCheckIns.some((c) => c.clubName === (JSON.parse(localStorage.getItem('adminRole') || '{}').clubName || '')))
+                      ? "เช็คอินแล้ว"
+                      : "ยังไม่เช็คอิน"}
                   </span>
                 </div>
                 <div className="p-4">
@@ -451,7 +517,7 @@ export default function QrcodeCheckin() {
                       </div>
                     )}
                   </div>
-                  {!ticket.checkInStatus && (
+                  {!(ticket.clubCheckIns && ticket.clubCheckIns.some((c) => c.clubName === (JSON.parse(localStorage.getItem('adminRole') || '{}').clubName || ''))) && (
                     <div className="mt-4 pt-4 border-t">
                       <button
                         className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"

@@ -22,21 +22,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Username and password are required' }, { status: 400 });
     }
 
-    const adminDoc = await db.collection('admin').doc('smo-01').get();
+    const adminSnap = await db
+      .collection('admin')
+      .where('smo-username', '==', username)
+      .limit(1)
+      .get();
 
-    if (!adminDoc.exists) {
+    if (adminSnap.empty) {
       return NextResponse.json({ error: 'Admin not found' }, { status: 404 });
     }
 
-    const adminData = adminDoc.data();
+    const adminData = adminSnap.docs[0].data();
 
     if (
-      username === adminData?.['smo-name'] &&
-      password === adminData?.['smo-password']
+      username === adminData['smo-username'] &&
+      password === adminData['smo-password']
     ) {
       return NextResponse.json({
-        role: adminData!['smo-role'],
-        name: adminData!['smo-name'],
+        role: adminData['smo-role'],
+        name: adminData['smo-name'],
+        username: adminData['smo-username'] || username, 
+        clubName: adminData['smo-club'] || '',           
+        fullName: adminData['smo-fullname'] || '',      
       });
     } else {
       return NextResponse.json({ error: 'เข้าสู่ระบบไม่สำเร็จชื่อหรือรหัสผ่านไม่ถูกต้อง' }, { status: 401 });

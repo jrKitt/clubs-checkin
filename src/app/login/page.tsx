@@ -23,9 +23,21 @@ const Page = () => {
       });
       const data = await res.json();
       if (res.ok) {
+        // เก็บข้อมูล adminRole ลง localStorage
+        localStorage.setItem("adminRole", JSON.stringify({
+          username: data.username,
+          clubName: data.clubName,
+          role: data.role,
+          name: data.name,
+          fullName: data.fullName
+        }));
         localStorage.setItem("role", data.role);
         localStorage.setItem("adminName", data.name);
-        router.push("/admin");
+        if(data.role === "admin"){
+          router.push("/admin");
+        } else {
+          router.push("/admin/checkin");
+        }
       } else {
         setError(data.error || "เข้าสู่ระบบไม่สำเร็จ");
       }

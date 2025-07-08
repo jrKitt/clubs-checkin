@@ -50,8 +50,7 @@ const AdminLayout: React.FC<React.PropsWithChildren<object>> = ({ children }) =>
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem("role");
-      localStorage.removeItem("adminName");
+      localStorage.clear();
       window.location.href = "/login";
     }
   };
