@@ -428,7 +428,9 @@ export default function Home() {
                   </div>
                   
                   <div className="relative z-10">
-                    <h2 className="text-xl font-bold text-center text-white">CPCRAFT OVERWORLD 2025</h2>
+                    <div className="flex justify-center mb-2">
+                      <Image src="/CPCRAFT2025-logo.png" alt="CPCRAFT OVERWORLD 2025" width={256} height={40} priority />
+                    </div>
                     <div className="flex items-center justify-center mt-1">
                       <div className="h-0.5 w-10 bg-yellow-300 mr-3"></div>
                       <p className="text-center text-orange-100 text-sm">วิทยาลัยการคอมพิวเตอร์ มหาวิทยาลัยขอนแก่น</p>
@@ -449,20 +451,14 @@ export default function Home() {
                       </p>
                     </div>
                   </div>
-                  <div className="mt-4 grid grid-cols-2 gap-4">
+                  <div className="mt-4 gap-4">
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-xs text-gray-500">หลักสูตร</p>
                       <p className="text-sm font-medium text-gray-800">{ticketData?.faculty || faculty}</p>
                     </div>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-xs text-gray-500">ประเภทอาหาร</p>
-                      <p className="text-sm font-medium text-gray-800">{ticketData?.foodType || foodType}</p>
-                    </div>
+                   
                   </div>
-                  <div className="mt-2 bg-gray-50 p-3 rounded-lg">
-                    <p className="text-xs text-gray-500">หมายเหตุแพ้อาหาร</p>
-                    <p className="text-sm font-medium text-gray-800">{ticketData?.foodNote || foodNote || "-"}</p>
-                  </div>
+              
                 </div>
                 
                 <div className="bg-white p-6">
