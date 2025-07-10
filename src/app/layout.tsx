@@ -20,7 +20,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <link rel="icon" href="/SMOLOGO.webp" sizes="any" />
+      <head>
+        <link rel="icon" href="/SMOLOGO.webp" type="image/webp" />
+      </head>
       <body className={`${ibmPlexSansThai.variable} antialiased`}>
         {children}
       </body>
