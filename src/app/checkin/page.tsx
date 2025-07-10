@@ -330,10 +330,7 @@ export default function QrcodeCheckin() {
                 />
                 {!scanning && (
                   <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center pointer-events-none">
-                    <div className="bg-white/80 p-4 rounded-lg text-center">
-                      <IoQrCodeOutline className="mx-auto text-4xl text-blue-500 mb-2" />
-                      <p className="text-gray-700">กดปุ่มเริ่มสแกนด้านล่าง</p>
-                    </div>
+                    
                   </div>
                 )}
               </div>
