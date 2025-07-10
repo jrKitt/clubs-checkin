@@ -15,40 +15,34 @@ const db = getFirestore();
 
 export async function POST(req: NextRequest) {
   try {
-    const admins: {
-      "smo-username": string;
-      "smo-password": string;
-      "smo-role": string;
-      "smo-club": string;
-      "smo-name": string;
-      "smo-fullname": string;
-      lastCheckInProcessed?: string;
-      totalCheckInsProcessed?: number;
+    const students: {
+      StudentID: string;
+      StudentName: string;
+      StudentYear: string;
+      StudentMajor: string;
+      StudentDes?: string;
     }[] = await req.json();
 
-    if (!Array.isArray(admins) || admins.length === 0) {
-      return NextResponse.json({ error: "No admins data" }, { status: 400 });
+    if (!Array.isArray(students) || students.length === 0) {
+      return NextResponse.json({ error: "No students data" }, { status: 400 });
     }
 
     const batch = db.batch();
-    admins.forEach((admin) => {
-      const docRef = db.collection("admin").doc(admin["smo-username"]);
+    students.forEach((student) => {
+      const docRef = db.collection("student").doc(student.StudentID);
       batch.set(docRef, {
-        "smo-username": admin["smo-username"],
-        "smo-password": admin["smo-password"],
-        "smo-role": admin["smo-role"],
-        "smo-club": admin["smo-club"],
-        "smo-name": admin["smo-name"],
-        "smo-fullname": admin["smo-fullname"],
-        lastCheckInProcessed: admin.lastCheckInProcessed ?? "",
-        totalCheckInsProcessed: admin.totalCheckInsProcessed ?? 0,
+        StudentID: student.StudentID,
+        StudentName: student.StudentName,
+        StudentYear: student.StudentYear,
+        StudentMajor: student.StudentMajor,
+        StudentDes: student.StudentDes ?? "",
       });
     });
 
     await batch.commit();
-    return NextResponse.json({ message: "Import admin success", count: admins.length });
+    return NextResponse.json({ message: "Import success", count: students.length });
   } catch (error) {
-    console.error("Import admin error:", error);
+    console.error("Import students error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -69,7 +69,6 @@ export default function Home() {
     }
   }, [registrationComplete, ticketId]);
 
-  // เพิ่มฟังก์ชันนี้
   const checkExistingTicket = async (studentID: string) => {
     try {
       const res = await fetch("/api/check-e-ticket", {
@@ -89,13 +88,18 @@ export default function Home() {
         setFoodNote(data.ticket.foodNote);
         return true;
       }
+      // ถ้า allowRegister = true ให้ไปกรอกข้อมูลใหม่
+      if (data.allowRegister) {
+        setCurrentStep("personalInfo");
+        setStudentStatus(1); // 1 = กรอกเอง
+        return false;
+      }
       return false;
     } catch {
       return false;
     }
   };
 
-  // แก้ไข handleCheckStudentID
   const handleCheckStudentID = async () => {
     if (studentID.trim() === "") return;
     setLoading(true);
@@ -103,13 +107,16 @@ export default function Home() {
     setFaculty("");
     setStudentStatus(null);
 
-    // เช็คว่ามีตั๋วอยู่แล้วหรือไม่
     const found = await checkExistingTicket(studentID);
     if (found) {
       setLoading(false);
       return;
     }
 
+    if (studentStatus === 1) {
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch("/api/student-data", {
         method: "POST",
@@ -129,7 +136,10 @@ export default function Home() {
         );
         setCurrentStep("personalInfo");
       } else {
-        toast.error("ไม่พบข้อมูล");
+        // ถ้าไม่พบข้อมูลในฐาน student ให้กรอกเอง
+        setStudentStatus(1);
+        setCurrentStep("personalInfo");
+        toast.info("ไม่พบข้อมูลในระบบ กรุณากรอกข้อมูลด้วยตนเอง");
       }
     } catch {
       toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อ");
@@ -287,19 +297,26 @@ export default function Home() {
                     หลักสูตร <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <input
-                      type="text"
-                      className="w-full border border-gray-300 rounded-lg p-3 mb-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                      placeholder="หลักสูตร"
+                    <select
+                      className="w-full border border-gray-300 rounded-lg p-3 mb-1 appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
                       value={faculty}
                       onChange={(e) => setFaculty(e.target.value)}
                       required
                       disabled={studentStatus === 0}
-                    />
+                    >
+                      <option value="" disabled>
+                        กรุณาเลือกหลักสูตร
+                      </option>
+                      {Object.entries(majorMap).map(([key, value]) => (
+                        <option key={key} value={value}>
+                          {value}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
-                <div>
+                <div hidden>
                   <label className="block text-sm font-medium mb-2 text-gray-700">
                     ประเภทอาหาร
                   </label>
@@ -384,11 +401,11 @@ export default function Home() {
                     <span className="text-gray-500">หลักสูตร:</span>
                     <span className="font-medium text-gray-800">{faculty}</span>
                   </div>
-                  <div className="flex justify-between border-b border-gray-100 pb-2">
+                  <div className="flex justify-between border-b border-gray-100 pb-2" hidden>
                     <span className="text-gray-500">ประเภทอาหาร:</span>
                     <span className="font-medium text-gray-800">{foodType}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between" hidden>
                     <span className="text-gray-500">หมายเหตุแพ้อาหาร:</span>
                     <span className="font-medium text-gray-800">{foodNote || "-"}</span>
                   </div>

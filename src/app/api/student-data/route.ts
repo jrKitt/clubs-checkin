@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
             .get();
 
         if (studentSnap.empty) {
-            return NextResponse.json({ error: 'Invalid student ID' }, { status: 401 });
+            return NextResponse.json({ students: [] });
         }
 
         const students = studentSnap.docs.map(doc => doc.data());

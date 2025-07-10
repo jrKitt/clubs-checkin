@@ -19,11 +19,21 @@ export async function POST(req: NextRequest) {
     const { studentID, id, name, faculty, foodType, group, registeredAt, checkInStatus, foodNote } = body;
 
     if (studentID && !id && !name && !faculty && !foodType && !registeredAt) {
-      const snapshot = await db.collection("club-etickets").where("studentID", "==", studentID).limit(1).get();
-      if (snapshot.empty) {
-        return NextResponse.json({ error: "ไม่พบตั๋ว" }, { status: 404 });
+      // ตรวจสอบทั้ง club-etickets และ e-tickets
+      let ticket = null;
+      let snapshot = await db.collection("club-etickets").where("studentID", "==", studentID).limit(1).get();
+      if (!snapshot.empty) {
+        ticket = snapshot.docs[0].data();
+      } else {
+        // ลองค้นหาใน e-tickets ด้วย
+        snapshot = await db.collection("e-tickets").where("studentID", "==", studentID).limit(1).get();
+        if (!snapshot.empty) {
+          ticket = snapshot.docs[0].data();
+        }
       }
-      const ticket = snapshot.docs[0].data();
+      if (!ticket) {
+        return NextResponse.json({ allowRegister: true });
+      }
       return NextResponse.json({ ticket });
     }
 
