@@ -58,9 +58,16 @@ export default function LeaderboardPage() {
     setMyIndex(idx >= 0 ? idx : null);
   };
 
+  const getInitials = (name: string): string => {
+    const words = name.split(" ");
+    return words.map(word => word.charAt(0)).join("").toUpperCase();
+  };
+
+  // Update the topThree mapping to include initials
   const topThree = leaderboard.slice(0, 3).map(entry => ({
     ...entry,
-    year: getYearFromStudentID(entry.studentID)
+    year: getYearFromStudentID(entry.studentID),
+    initials: entry.name.split(' ').map(word => word.charAt(0)).join('') // Extract initials
   }));
   const restOfList = leaderboard.slice(3).map(entry => ({
     ...entry,
@@ -123,7 +130,7 @@ export default function LeaderboardPage() {
                      style={{borderColor: colors.secondary}}>
                   <span className="absolute top-0 left-0 right-0 py-1 text-white text-xs font-bold text-center"
                         style={{backgroundColor: colors.secondary}}>2</span>
-                  <span className="text-xl font-bold mt-2" style={{color: colors.primary}}>{topThree[1].year.charAt(0)}</span>
+                  <span className="text-xl font-bold mt-2" style={{color: colors.primary}}>{getInitials(topThree[1].name)}</span>
                 </div>
                 <p className="font-medium text-sm max-w-[80px] truncate text-center" style={{color: colors.primary}}>{topThree[1].name} ({topThree[1].year})</p>
                 <p className="font-bold" style={{color: colors.accent}}>{topThree[1].point} <span className="text-xs text-gray-500">/ {topThree[1].totalClubsCheckedIn ?? 0} ชมรม</span></p>
@@ -144,7 +151,7 @@ export default function LeaderboardPage() {
                        style={{borderColor: colors.accent}}>
                     <span className="absolute top-0 left-0 right-0 py-1 text-white text-xs font-bold text-center"
                           style={{backgroundColor: colors.accent}}>1</span>
-                    <span className="text-2xl font-bold mt-2" style={{color: colors.primary}}>{topThree[0].year.charAt(0)}</span>
+                    <span className="text-2xl font-bold mt-2" style={{color: colors.primary}}>{getInitials(topThree[0].name)}</span>
                   </div>
                 </div>
                 <p className="font-medium text-sm max-w-[100px] truncate text-center" style={{color: colors.primary}}>{topThree[0].name} ({topThree[0].year})</p>
@@ -159,7 +166,7 @@ export default function LeaderboardPage() {
                      style={{borderColor: colors.secondary}}>
                   <span className="absolute top-0 left-0 right-0 py-1 text-white text-xs font-bold text-center"
                         style={{backgroundColor: colors.secondary}}>3</span>
-                  <span className="text-xl font-bold mt-2" style={{color: colors.primary}}>{topThree[2].year.charAt(0)}</span>
+                  <span className="text-xl font-bold mt-2" style={{color: colors.primary}}>{getInitials(topThree[2].name)}</span>
                 </div>
                 <p className="font-medium text-sm max-w-[80px] truncate text-center" style={{color: colors.primary}}>{topThree[2].name} ({topThree[2].year})</p>
                 <p className="font-bold" style={{color: colors.accent}}>{topThree[2].point} <span className="text-xs text-gray-500">/ {topThree[2].totalClubsCheckedIn ?? 0} ชมรม</span></p>
