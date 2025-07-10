@@ -139,17 +139,20 @@ export default function QrcodeCheckin() {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [])
 
-  const fetchStudentName = async (studentID: string): Promise<string> => {
+  const fetchStudentName = async (): Promise<Record<string, string>> => {
     try {
-      const res = await fetch(`/api/e-ticket?studentID=${studentID}`);
+      const res = await fetch(`/api/e-ticket`); 
       const data = await res.json();
-      if (res.ok && data.name) {
-        return data.name;
+      if (res.ok && Array.isArray(data)) {
+        return data.reduce((acc: Record<string, string>, student) => {
+          acc[student.studentID] = student.name;
+          return acc;
+        }, {});
       }
     } catch {
-      console.error("Failed to fetch student name from /api/e-ticket");
+      console.error("Failed to fetch student data from /api/e-ticket");
     }
-    return "ไม่ทราบชื่อ";
+    return {}; 
   };
 
   const handleCheckin = async () => {
@@ -174,9 +177,12 @@ export default function QrcodeCheckin() {
         body: JSON.stringify({ scannerID, peerID }),
       });
       const data = await res.json();
-      if (res.ok) {
-        const name = data.name || (await fetchStudentName(peerID));
+      if (res.ok && data.status === "success") {
         toast.success("เช็คอินสำเร็จ! คุณและเพื่อนได้รับ 30 คะแนน");
+        const studentData = await fetchStudentName(); // Fetch all student data
+        const name = studentData[peerID] || "ไม่ทราบชื่อ"; // Ensure name is fetched or default to "ไม่ทราบชื่อ"
+        if (!name) return; 
+
         setRecentCheckins((prev) => {
           const updatedCheckins = [
             { id: peerID, studentID: peerID, name, checkInStatus: true },
@@ -205,7 +211,6 @@ export default function QrcodeCheckin() {
     if (hasScanned) return;
     setHasScanned(true);
 
-    // Stop scanning immediately
     if (html5Qr) {
       html5Qr.stop().catch(() => {});
       html5Qr.clear();
@@ -241,7 +246,12 @@ export default function QrcodeCheckin() {
           body: JSON.stringify({ scannerID, peerID: decodedText }),
         });
         const data = await res.json();
-        if (res.ok) {
+        if (res.ok && data.status === "success") {
+          toast.success("เช็คอินสำเร็จ! คุณและเพื่อนได้รับ 30 คะแนน");
+          const studentData = await fetchStudentName(); // Fetch all student data
+          const name = studentData[decodedText] || "ไม่ทราบชื่อ"; // Ensure name is fetched or default to "ไม่ทราบชื่อ"
+          if (!name) return; 
+
           setResult("เช็คอินสำเร็จ! คุณและเพื่อนได้รับ 30 คะแนน");
           setResultType("success");
           setRecentCheckins((prev) => [
@@ -426,15 +436,9 @@ export default function QrcodeCheckin() {
                   className="py-3 flex items-center justify-between"
                 >
                   <div className="flex items-center">
-                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                      <IoPersonOutline className="text-blue-600" />
-                    </div>
                     <div>
                       <span className="block font-medium text-gray-800">
                         {checkin.name || "ไม่ทราบชื่อ"}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        รหัส {checkin.studentID}
                       </span>
                     </div>
                   </div>

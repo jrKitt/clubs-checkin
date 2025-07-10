@@ -2,10 +2,27 @@
 import React, { useEffect, useState, useRef } from "react";
 import MobileNavbar from "@/app/components/Navbar/Navbar";
 interface LeaderboardEntry {
+  studentID: string;
   name: string;
   point: number;
   totalClubsCheckedIn?: number;
 }
+
+const getYearFromStudentID = (studentID: string): string => {
+  const yearPrefix = studentID.slice(0, 2);
+  switch (yearPrefix) {
+    case "68":
+      return "ปี 1";
+    case "67":
+      return "ปี 2";
+    case "66":
+      return "ปี 3";
+    case "65":
+      return "ปี 4";
+    default:
+      return "ไม่ทราบชั้นปี";
+  }
+};
 
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -36,16 +53,19 @@ export default function LeaderboardPage() {
   const handleSearch = () => {
     if (!search.trim()) return;
     const idx = leaderboard.findIndex((e) =>
-      e.name.toLowerCase().includes(search.trim().toLowerCase())
+      e.studentID.toLowerCase().includes(search.trim().toLowerCase())
     );
     setMyIndex(idx >= 0 ? idx : null);
   };
 
   const topThree = leaderboard.slice(0, 3).map(entry => ({
     ...entry,
-    name: entry.name.replace(/^นาย\s*/, "")
+    year: getYearFromStudentID(entry.studentID)
   }));
-  const restOfList = leaderboard.slice(3);
+  const restOfList = leaderboard.slice(3).map(entry => ({
+    ...entry,
+    year: getYearFromStudentID(entry.studentID)
+  }));
 
   const colors = {
     primary: "#003b7a",   
@@ -103,9 +123,9 @@ export default function LeaderboardPage() {
                      style={{borderColor: colors.secondary}}>
                   <span className="absolute top-0 left-0 right-0 py-1 text-white text-xs font-bold text-center"
                         style={{backgroundColor: colors.secondary}}>2</span>
-                  <span className="text-xl font-bold mt-2" style={{color: colors.primary}}>{topThree[1].name.charAt(0)}</span>
+                  <span className="text-xl font-bold mt-2" style={{color: colors.primary}}>{topThree[1].year.charAt(0)}</span>
                 </div>
-                <p className="font-medium text-sm max-w-[80px] truncate text-center" style={{color: colors.primary}}>{topThree[1].name}</p>
+                <p className="font-medium text-sm max-w-[80px] truncate text-center" style={{color: colors.primary}}>{topThree[1].name} ({topThree[1].year})</p>
                 <p className="font-bold" style={{color: colors.accent}}>{topThree[1].point} <span className="text-xs text-gray-500">/ {topThree[1].totalClubsCheckedIn ?? 0} ชมรม</span></p>
               </div>
             )}
@@ -124,10 +144,10 @@ export default function LeaderboardPage() {
                        style={{borderColor: colors.accent}}>
                     <span className="absolute top-0 left-0 right-0 py-1 text-white text-xs font-bold text-center"
                           style={{backgroundColor: colors.accent}}>1</span>
-                    <span className="text-2xl font-bold mt-2" style={{color: colors.primary}}>{topThree[0].name.charAt(0)}</span>
+                    <span className="text-2xl font-bold mt-2" style={{color: colors.primary}}>{topThree[0].year.charAt(0)}</span>
                   </div>
                 </div>
-                <p className="font-medium text-sm max-w-[100px] truncate text-center" style={{color: colors.primary}}>{topThree[0].name}</p>
+                <p className="font-medium text-sm max-w-[100px] truncate text-center" style={{color: colors.primary}}>{topThree[0].name} ({topThree[0].year})</p>
                 <p className="font-bold" style={{color: colors.accent}}>{topThree[0].point} <span className="text-xs text-gray-500">/ {topThree[0].totalClubsCheckedIn ?? 0} ชมรม</span></p>
               </div>
             )}
@@ -139,9 +159,9 @@ export default function LeaderboardPage() {
                      style={{borderColor: colors.secondary}}>
                   <span className="absolute top-0 left-0 right-0 py-1 text-white text-xs font-bold text-center"
                         style={{backgroundColor: colors.secondary}}>3</span>
-                  <span className="text-xl font-bold mt-2" style={{color: colors.primary}}>{topThree[2].name.charAt(0)}</span>
+                  <span className="text-xl font-bold mt-2" style={{color: colors.primary}}>{topThree[2].year.charAt(0)}</span>
                 </div>
-                <p className="font-medium text-sm max-w-[80px] truncate text-center" style={{color: colors.primary}}>{topThree[2].name}</p>
+                <p className="font-medium text-sm max-w-[80px] truncate text-center" style={{color: colors.primary}}>{topThree[2].name} ({topThree[2].year})</p>
                 <p className="font-bold" style={{color: colors.accent}}>{topThree[2].point} <span className="text-xs text-gray-500">/ {topThree[2].totalClubsCheckedIn ?? 0} ชมรม</span></p>
               </div>
             )}
@@ -156,7 +176,7 @@ export default function LeaderboardPage() {
             
             return (
               <div
-                key={entry.name + idx}
+                key={entry.studentID + idx}
                 ref={isMe ? myCardRef : undefined}
                 className={`flex items-center py-3 px-4 rounded-2xl ${
                   isMe ? "bg-blue-50 border-2" : "bg-white border"
@@ -171,7 +191,7 @@ export default function LeaderboardPage() {
                   {idx}
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium" style={{color: colors.primary}}>{entry.name}</p>
+                  <p className="font-medium" style={{color: colors.primary}}>{entry.name} ({entry.year})</p>
                 </div>
                 <div className="font-bold" style={{color: colors.accent}}>
                   {entry.point} <span className="text-xs text-gray-500">/ {entry.totalClubsCheckedIn ?? 0} ชมรม</span>

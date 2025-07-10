@@ -20,48 +20,51 @@ export async function POST(req: NextRequest) {
     const { scannerID, peerID } = await req.json();
 
     if (!scannerID || !peerID) {
-      return NextResponse.json({ error: "กรุณากรอกรหัสนักศึกษา" }, { status: 400 });
+      return NextResponse.json({ error: "กรุณากรอกรหัสนักศึกษาทั้งสองคน" }, { status: 400 });
     }
 
     if (scannerID === peerID) {
       return NextResponse.json({ error: "ไม่สามารถเช็คอินตัวเองได้" }, { status: 400 });
     }
 
-    // Check if the pair has already been checked in
-    const pairCheckSnap = await db.collection("peer-checkins")
-      .where("pair", "in", [
-        `${scannerID}-${peerID}`,
-        `${peerID}-${scannerID}`
-      ])
+    // Check if the pair has already checked in together
+    const checkSnap = await db.collection("peer-checkins")
+      .where("scannerID", "==", scannerID)
+      .where("peerID", "==", peerID)
       .limit(1).get();
 
-    if (!pairCheckSnap.empty) {
-      return NextResponse.json({ error: "คู่รหัสนี้ได้เช็คอินไปแล้ว" }, { status: 400 });
+    if (!checkSnap.empty) {
+      return NextResponse.json({ error: "คู่เช็คอินนี้ได้เช็คอินไปแล้ว" }, { status: 400 });
     }
 
-    // Add a new check-in record for the pair
+    // Add a new check-in record
     await db.collection("peer-checkins").add({
-      pair: `${scannerID}-${peerID}`,
+      scannerID,
+      peerID,
       timestamp: new Date().toISOString(),
     });
 
-    // Update points for both students
+    // Update points for both IDs in the tickets collection
     const ticketsRef = db.collection("club-etickets");
 
-    for (const studentID of [scannerID, peerID]) {
-      const studentSnap = await ticketsRef.where("studentID", "==", studentID).limit(1).get();
+    const scannerSnap = await ticketsRef.where("studentID", "==", scannerID).limit(1).get();
+    const peerSnap = await ticketsRef.where("studentID", "==", peerID).limit(1).get();
 
-      if (studentSnap.empty) {
-        return NextResponse.json({ error: `ไม่พบข้อมูลตั๋วของนักศึกษา ${studentID}` }, { status: 404 });
-      }
-
-      const studentDoc = studentSnap.docs[0];
-      const studentPoints = studentDoc.data().points || 0;
-
-      await studentDoc.ref.update({ points: studentPoints + 30 });
+    if (scannerSnap.empty || peerSnap.empty) {
+      return NextResponse.json({ error: "ไม่พบข้อมูลตั๋วของนักศึกษาทั้งสองคน" }, { status: 404 });
     }
 
+    const scannerDoc = scannerSnap.docs[0];
+    const peerDoc = peerSnap.docs[0];
+
+    const scannerPoints = scannerDoc.data().points || 0;
+    const peerPoints = peerDoc.data().points || 0;
+
+    await scannerDoc.ref.update({ points: scannerPoints + 30 });
+    await peerDoc.ref.update({ points: peerPoints + 30 });
+
     return NextResponse.json({ 
+      status: "success", 
       message: "Peer check-in success", 
       scannerID, 
       peerID, 

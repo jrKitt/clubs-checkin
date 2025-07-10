@@ -78,7 +78,7 @@ export async function GET() {
   try {
     const snapshot = await db.collection("club-etickets").get();
     const tickets = snapshot.docs.map(doc => doc.data());
-    console.log("Fetched tickets:", tickets);
+    // console.log("Fetched tickets:", tickets);
     return NextResponse.json({ tickets });
   } catch (error) {
     console.error("Club E-Ticket GET API error:", error);

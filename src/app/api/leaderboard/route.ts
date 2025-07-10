@@ -19,9 +19,17 @@ export async function GET() {
     const leaderboard = ticketsSnap.docs.map(doc => {
       const data = doc.data();
       return {
+        studentID: data.studentID, 
         name: data.name || "",
         point: data.points || data.point || 0,
-        totalClubsCheckedIn: data.totalClubsCheckedIn || 0
+        totalClubsCheckedIn: data.totalClubsCheckedIn || 0,
+        checkInStatus: data.checkInStatus || false,
+        faculty: data.faculty || "",
+        foodNote: data.foodNote || "",
+        foodType: data.foodType || "",
+        group: data.group || "",
+        id: data.id || "",
+        registeredAt: data.registeredAt || ""
       };
     });
     leaderboard.sort((a, b) => b.point - a.point);
