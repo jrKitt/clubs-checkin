@@ -20,12 +20,17 @@ export default function Navbar() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    const handleClick = () => {
+        localStorage.clear();
+        window.location.href = "/";
+    }
+
     return (
         <nav className={`fixed w-full z-50 transition-all duration-300 ${
             scrolled ? "bg-[#30319D]/95 backdrop-blur-sm shadow-lg py-2" : "bg-[#30319D] py-4"
         }`}>
             <div className="max-w-7xl flex items-center justify-between mx-auto px-4 sm:px-6 lg:px-8">
-                <Link href="/" className="flex items-center space-x-3">
+                <Link href="/" className="flex items-center space-x-3" onClick={handleClick}>
                     <div className="relative h-10 w-10 overflow-hidden rounded-full border-2 border-white/20">
                         <Image
                             src="/SMOLOGO.webp"
@@ -49,9 +54,7 @@ export default function Navbar() {
                     <Link
                         href="/"
                         className="px-4 py-2 text-white hover:text-blue-200 rounded-md text-sm font-medium transition-colors duration-200 relative group"
-                        onClick={() => {
-                            if (typeof window !== "undefined") localStorage.clear();
-                        }}
+                         onClick={handleClick}
                     >
                         ลงทะเบียนกิจกรรม
                         <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full"></span>
