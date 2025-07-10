@@ -33,7 +33,6 @@ const AdminLayout: React.FC<React.PropsWithChildren<object>> = ({ children }) =>
   const pathname = usePathname();
 
   useEffect(() => {
-    // ป้องกันการรัน useEffect ที่เข้าถึง window ในระหว่าง server-side rendering
     if (typeof window === 'undefined') return;
 
     const checkIfMobile = () => {
