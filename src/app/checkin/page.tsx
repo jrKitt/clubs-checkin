@@ -24,7 +24,12 @@ interface Ticket {
 }
 
 export default function QrcodeCheckin() {
-  const [scannerID, setScannerID] = useState(() => localStorage.getItem("scannerID") || "");
+  const [scannerID, setScannerID] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("scannerID") || "";
+    }
+    return "";
+  });
   const [peerID, setPeerID] = useState("");
   const [result, setResult] = useState("");
   const [resultType, setResultType] = useState<"success" | "error" | "">("");
@@ -45,10 +50,17 @@ export default function QrcodeCheckin() {
   }, [html5Qr]);
 
   useEffect(() => {
-    if (scannerID) {
+    if (typeof window !== "undefined" && scannerID) {
       localStorage.setItem("scannerID", scannerID);
     }
   }, [scannerID]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedScannerID = localStorage.getItem("scannerID") || "";
+      setScannerID(storedScannerID);
+    }
+  }, []);
 
   useEffect(() => {
     if (scanning && (scannerID.trim() === "")) {
@@ -125,7 +137,7 @@ export default function QrcodeCheckin() {
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, []);
+  }, [])
 
   const fetchStudentName = async (studentID: string): Promise<string> => {
     try {
