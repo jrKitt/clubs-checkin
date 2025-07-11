@@ -56,7 +56,6 @@ export async function POST(req: NextRequest) {
     await scannerDoc.ref.update({ points: scannerPoints + 30 });
     await peerDoc.ref.update({ points: peerPoints + 30 });
 
-    // Add a new check-in record only after points update is successful
     await db.collection("peer-checkins").add({
       scannerID,
       peerID,
