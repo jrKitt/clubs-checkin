@@ -65,6 +65,8 @@ const checkLocationPermission = async (): Promise<void> => {
   });
 };
 
+// No props needed for QrcodeCheckin
+
 export default function QrcodeCheckin() {
   const [input, setInput] = useState("");
   const [ticket, setTicket] = useState<Ticket | null>(null);
@@ -149,57 +151,7 @@ export default function QrcodeCheckin() {
       await checkLocationPermission();
       setResult("");
       setResultType("");
-
-      // Ensure the 'reader' element exists before initializing the scanner
-      if (!readerRef.current || !document.getElementById("reader")) {
-        setResult("ไม่พบองค์ประกอบสำหรับการสแกน QR Code");
-        setResultType("error");
-        return;
-      }
-
-      if (html5Qr) {
-        await html5Qr.stop().catch(() => {});
-        html5Qr.clear();
-      }
-
-      const qr = new Html5Qrcode("reader", false);
-      setHtml5Qr(qr);
       setScanning(true);
-
-      Html5Qrcode.getCameras()
-        .then((devices) => {
-          const backCam = devices.find((d) =>
-            d.label.toLowerCase().includes("back")
-          );
-          const cameraId = backCam?.id;
-          if (!cameraId) {
-            setResult("ไม่พบกล้องหลังบนอุปกรณ์นี้");
-            setResultType("error");
-            setScanning(false);
-            return;
-          }
-          qr
-            .start(
-              cameraId,
-              {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0,
-              },
-              onScanSuccess,
-              () => {}
-            )
-            .catch((err) => {
-              setResult("ไม่สามารถเปิดกล้องได้: " + err);
-              setResultType("error");
-              setScanning(false);
-            });
-        })
-        .catch(() => {
-          setResult("ไม่พบกล้องบนอุปกรณ์นี้");
-          setResultType("error");
-          setScanning(false);
-        });
     } catch (error) {
       const errorMessage = typeof error === "string" ? error : "เกิดข้อผิดพลาด";
       setResult(errorMessage);
@@ -207,17 +159,14 @@ export default function QrcodeCheckin() {
     }
   };
 
-  const stopScanner = async () => {
-    if (html5Qr && scanning) {
-      try {
-        await html5Qr.stop(); // Ensure the scanner is stopped before clearing
-        html5Qr.clear();
-        setHtml5Qr(null);
-      } catch (error) {
-        console.error("Error stopping the scanner:", error);
-      }
+  const stopScanner = () => {
+    if (html5Qr) {
+      html5Qr.stop().catch(() => {});
+      html5Qr.clear();
+      setHtml5Qr(null);
     }
     setScanning(false);
+    window.location.reload(); // Refresh the page
   };
 
   const handleSearch = async (searchValue?: string) => {
