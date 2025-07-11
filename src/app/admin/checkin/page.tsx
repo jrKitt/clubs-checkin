@@ -81,8 +81,9 @@ export default function QrcodeCheckin() {
   useEffect(() => {
     return () => {
       if (html5Qr) {
-        html5Qr.stop().catch(() => {});
-        html5Qr.clear();
+        html5Qr.stop()
+          .then(() => html5Qr.clear())
+          .catch((err) => console.error("Error during scanner cleanup:", err));
       }
     };
   }, [html5Qr]);
@@ -98,15 +99,12 @@ export default function QrcodeCheckin() {
 
       Html5Qrcode.getCameras()
         .then((devices) => {
-          let cameraId = devices[0]?.id || undefined;
-          if (devices.length > 1) {
-            const backCam = devices.find((d) =>
-              d.label.toLowerCase().includes("back")
-            );
-            if (backCam) cameraId = backCam.id;
-          }
+          const backCam = devices.find((d) =>
+            d.label.toLowerCase().includes("back")
+          );
+          const cameraId = backCam?.id;
           if (!cameraId) {
-            setResult("ไม่พบกล้องบนอุปกรณ์นี้");
+            setResult("ไม่พบกล้องหลังบนอุปกรณ์นี้");
             setResultType("error");
             setScanning(false);
             return;
@@ -149,7 +147,48 @@ export default function QrcodeCheckin() {
       await checkLocationPermission();
       setResult("");
       setResultType("");
+      if (html5Qr) {
+        await html5Qr.stop().catch(() => {});
+        html5Qr.clear();
+      }
+      const qr = new Html5Qrcode("reader", false);
+      setHtml5Qr(qr);
       setScanning(true);
+
+      Html5Qrcode.getCameras()
+        .then((devices) => {
+          const backCam = devices.find((d) =>
+            d.label.toLowerCase().includes("back")
+          );
+          const cameraId = backCam?.id;
+          if (!cameraId) {
+            setResult("ไม่พบกล้องหลังบนอุปกรณ์นี้");
+            setResultType("error");
+            setScanning(false);
+            return;
+          }
+          qr
+            .start(
+              cameraId,
+              {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0,
+              },
+              onScanSuccess,
+              () => {}
+            )
+            .catch((err) => {
+              setResult("ไม่สามารถเปิดกล้องได้: " + err);
+              setResultType("error");
+              setScanning(false);
+            });
+        })
+        .catch(() => {
+          setResult("ไม่พบกล้องบนอุปกรณ์นี้");
+          setResultType("error");
+          setScanning(false);
+        });
     } catch (error) {
       const errorMessage = typeof error === "string" ? error : "เกิดข้อผิดพลาด";
       setResult(errorMessage);

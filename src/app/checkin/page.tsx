@@ -127,15 +127,12 @@ export default function QrcodeCheckin() {
 
       Html5Qrcode.getCameras()
         .then((devices) => {
-          let cameraId = devices[0]?.id || undefined;
-          if (devices.length > 1) {
-            const backCam = devices.find((d) =>
-              d.label.toLowerCase().includes("back")
-            );
-            if (backCam) cameraId = backCam.id;
-          }
+          const backCam = devices.find((d) =>
+            d.label.toLowerCase().includes("back")
+          );
+          const cameraId = backCam?.id;
           if (!cameraId) {
-            setResult("ไม่พบกล้องบนอุปกรณ์นี้");
+            setResult("ไม่พบกล้องหลังบนอุปกรณ์นี้");
             setResultType("error");
             setScanning(false);
             return;
@@ -350,6 +347,12 @@ export default function QrcodeCheckin() {
       setResultType("error");
       return;
     }
+
+    if (html5Qr) {
+      html5Qr.clear(); // Clear any previous instance
+      setHtml5Qr(null);
+    }
+
     setScanning(true);
     setResult("");
     setResultType("");
