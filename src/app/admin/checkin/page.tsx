@@ -19,6 +19,52 @@ interface Ticket {
   clubCheckIns?: ClubCheckIn[];
 }
 
+const TARGET_LOCATION = { lat: 16.47551, lng: 102.825045 };
+const MIN_DISTANCE = 0;
+const MAX_DISTANCE = 500;
+
+const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const toRad = (value: number): number => (value * Math.PI) / 180;
+  const R = 6371e3; 
+  const φ1 = toRad(lat1);
+  const φ2 = toRad(lat2);
+  const Δφ = toRad(lat2 - lat1);
+  const Δλ = toRad(lng2 - lng1);
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) *
+    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; 
+};
+
+const checkLocationPermission = async (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject("Geolocation is not supported by your browser.");
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const distance = calculateDistance(
+          latitude,
+          longitude,
+          TARGET_LOCATION.lat,
+          TARGET_LOCATION.lng
+        );
+        if (distance >= MIN_DISTANCE && distance <= MAX_DISTANCE) {
+          resolve();
+        } else {
+          reject("คุณต้องอยู่ในสถานที่ที่กำหนดเพื่อสแกน QR Code");
+        }
+      },
+      () => reject("ไม่สามารถเข้าถึงตำแหน่งของคุณได้")
+    );
+  });
+};
+
 export default function QrcodeCheckin() {
   const [input, setInput] = useState("");
   const [ticket, setTicket] = useState<Ticket | null>(null);
@@ -98,17 +144,28 @@ export default function QrcodeCheckin() {
     setInput(decodedText);
   };
 
-  const startScanner = () => {
-    setResult("");
-    setResultType("");
-    setScanning(true);
+  const startScanner = async () => {
+    try {
+      await checkLocationPermission();
+      setResult("");
+      setResultType("");
+      setScanning(true);
+    } catch (error) {
+      const errorMessage = typeof error === "string" ? error : "เกิดข้อผิดพลาด";
+      setResult(errorMessage);
+      setResultType("error");
+    }
   };
 
-  const stopScanner = () => {
-    if (html5Qr) {
-      html5Qr.stop().catch(() => {});
-      html5Qr.clear();
-      setHtml5Qr(null);
+  const stopScanner = async () => {
+    if (html5Qr && scanning) {
+      try {
+        await html5Qr.stop(); // Ensure the scanner is stopped before clearing
+        html5Qr.clear();
+        setHtml5Qr(null);
+      } catch (error) {
+        console.error("Error stopping the scanner:", error);
+      }
     }
     setScanning(false);
   };
