@@ -127,12 +127,15 @@ export default function QrcodeCheckin() {
 
       Html5Qrcode.getCameras()
         .then((devices) => {
-          const backCam = devices.find((d) =>
-            d.label.toLowerCase().includes("back")
-          );
-          const cameraId = backCam?.id;
+          let cameraId = devices[0]?.id || undefined;
+          if (devices.length > 1) {
+            const backCam = devices.find((d) =>
+              d.label.toLowerCase().includes("back")
+            );
+            if (backCam) cameraId = backCam.id;
+          }
           if (!cameraId) {
-            setResult("ไม่พบกล้องหลังบนอุปกรณ์นี้");
+            setResult("ไม่พบกล้องบนอุปกรณ์นี้");
             setResultType("error");
             setScanning(false);
             return;
@@ -325,18 +328,15 @@ export default function QrcodeCheckin() {
             setTimeout(() => {
               setPeerID("");
               setResult("");
-              setHasScanned(false); // Reset the flag after successful check-in
             }, 3000);
           } else {
             setResult(data.error || "เช็คอินไม่สำเร็จ");
             setResultType("error");
-            setHasScanned(false); // Reset the flag if the request fails
           }
         })
         .catch(() => {
           setResult("เกิดข้อผิดพลาดในการเช็คอิน");
           setResultType("error");
-          setHasScanned(false); // Reset the flag if an error occurs
         })
         .finally(() => {
           setHasScanned(false); // Reset the flag after the request completes
@@ -350,12 +350,6 @@ export default function QrcodeCheckin() {
       setResultType("error");
       return;
     }
-
-    if (html5Qr) {
-      html5Qr.clear(); // Clear any previous instance
-      setHtml5Qr(null);
-    }
-
     setScanning(true);
     setResult("");
     setResultType("");
