@@ -37,13 +37,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "คู่เช็คอินนี้ได้เช็คอินไปแล้ว" }, { status: 400 });
     }
 
-    // Add a new check-in record
-    await db.collection("peer-checkins").add({
-      scannerID,
-      peerID,
-      timestamp: new Date().toISOString(),
-    });
-
     // Update points for both IDs in the tickets collection
     const ticketsRef = db.collection("club-etickets");
 
@@ -62,6 +55,13 @@ export async function POST(req: NextRequest) {
 
     await scannerDoc.ref.update({ points: scannerPoints + 30 });
     await peerDoc.ref.update({ points: peerPoints + 30 });
+
+    // Add a new check-in record only after points update is successful
+    await db.collection("peer-checkins").add({
+      scannerID,
+      peerID,
+      timestamp: new Date().toISOString(),
+    });
 
     return NextResponse.json({ 
       status: "success", 
