@@ -28,18 +28,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [ticketId, setTicketId] = useState("");
-  type TicketData = {
-    id: string;
-    studentID: string;
-    name: string;
-    faculty: string;
-    foodType: string;
-    foodNote: string;
-    registeredAt: string;
-    checkInStatus: boolean;
-  };
 
-  const [ticketData, setTicketData] = useState<TicketData | null>(null);
   useEffect(() => {
     if (typeof window !== "undefined") {
       setCurrentStep(localStorage.getItem("currentStep") || "checkStudent");
@@ -69,37 +58,6 @@ export default function Home() {
     }
   }, [registrationComplete, ticketId]);
 
-  const checkExistingTicket = async (studentID: string) => {
-    try {
-      const res = await fetch("/api/check-e-ticket", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ studentID }),
-      });
-      const data = await res.json();
-      if (res.ok && data.ticket) {
-        setTicketData(data.ticket);
-        setCurrentStep("ticket");
-        setRegistrationComplete(true);
-        setTicketId(data.ticket.id);
-        setFullName(data.ticket.name);
-        setFaculty(data.ticket.faculty);
-        setFoodType(data.ticket.foodType);
-        setFoodNote(data.ticket.foodNote);
-        return true;
-      }
-      // ถ้า allowRegister = true ให้ไปกรอกข้อมูลใหม่
-      if (data.allowRegister) {
-        setCurrentStep("personalInfo");
-        setStudentStatus(1); // 1 = กรอกเอง
-        return false;
-      }
-      return false;
-    } catch {
-      return false;
-    }
-  };
-
   const handleCheckStudentID = async () => {
     if (studentID.trim() === "") return;
     setLoading(true);
@@ -107,43 +65,11 @@ export default function Home() {
     setFaculty("");
     setStudentStatus(null);
 
-    const found = await checkExistingTicket(studentID);
-    if (found) {
-      setLoading(false);
-      return;
-    }
+    // ข้ามการเช็คข้อมูลจาก /api/student-data
+    setStudentStatus(1); // 1 = กรอกเอง
+    setCurrentStep("personalInfo");
+    toast.info("กรุณากรอกข้อมูลด้วยตนเอง");
 
-    if (studentStatus === 1) {
-      setLoading(false);
-      return;
-    }
-    try {
-      const res = await fetch("/api/student-data", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ StudentID: studentID }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.students && data.students.length > 0) {
-        const student = data.students[0];
-        setStudentStatus(0); 
-        setFullName(student.StudentName || "");
-        setFaculty(
-          majorMap[(student.StudentMajor as keyof typeof majorMap)] ||
-          student.StudentMajor ||
-          ""
-        );
-        setCurrentStep("personalInfo");
-      } else {
-        // ถ้าไม่พบข้อมูลในฐาน student ให้กรอกเอง
-        setStudentStatus(1);
-        setCurrentStep("personalInfo");
-        toast.info("ไม่พบข้อมูลในระบบ กรุณากรอกข้อมูลด้วยตนเอง");
-      }
-    } catch {
-      toast.error("เกิดข้อผิดพลาดในการเชื่อมต่อ");
-    }
     setLoading(false);
   };
 
@@ -459,19 +385,19 @@ export default function Home() {
                 <div className="bg-white px-6 py-5 border-b border-dashed border-gray-300">
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="font-bold text-gray-800 text-lg">{ticketData?.name || fullName}</h3>
+                      <h3 className="font-bold text-gray-800 text-lg">{fullName}</h3>
                       <p className="text-sm text-gray-600 flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-orange-600" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 100-12 6 6 0 000 12z" clipRule="evenodd" />
                         </svg>
-                        <span>รหัสนักศึกษา: {ticketData?.studentID || studentID}</span>
+                        <span>รหัสนักศึกษา: {studentID}</span>
                       </p>
                     </div>
                   </div>
                   <div className="mt-4 gap-4">
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-xs text-gray-500">หลักสูตร</p>
-                      <p className="text-sm font-medium text-gray-800">{ticketData?.faculty || faculty}</p>
+                      <p className="text-sm font-medium text-gray-800">{faculty}</p>
                     </div>
                    
                   </div>
