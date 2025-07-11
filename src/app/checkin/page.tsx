@@ -325,15 +325,18 @@ export default function QrcodeCheckin() {
             setTimeout(() => {
               setPeerID("");
               setResult("");
+              setHasScanned(false); // Reset the flag after successful check-in
             }, 3000);
           } else {
             setResult(data.error || "เช็คอินไม่สำเร็จ");
             setResultType("error");
+            setHasScanned(false); // Reset the flag if the request fails
           }
         })
         .catch(() => {
           setResult("เกิดข้อผิดพลาดในการเช็คอิน");
           setResultType("error");
+          setHasScanned(false); // Reset the flag if an error occurs
         })
         .finally(() => {
           setHasScanned(false); // Reset the flag after the request completes
