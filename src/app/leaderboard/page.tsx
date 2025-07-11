@@ -67,7 +67,7 @@ export default function LeaderboardPage() {
   const topThree = leaderboard.slice(0, 3).map(entry => ({
     ...entry,
     year: getYearFromStudentID(entry.studentID),
-    initials: entry.name.split(' ').map(word => word.charAt(0)).join('') // Extract initials
+    initials: entry.name.split(' ').map(word => word.charAt(0)).join('') 
   }));
   const restOfList = leaderboard.slice(3).map(entry => ({
     ...entry,

@@ -23,6 +23,52 @@ interface Ticket {
   clubCheckIns?: ClubCheckIn[];
 }
 
+const TARGET_LOCATION = { lat: 16.47551, lng: 102.825045 }; 
+const MIN_DISTANCE = 0; 
+const MAX_DISTANCE = 500; 
+
+const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const toRad = (value: number): number => (value * Math.PI) / 180;
+  const R = 6371e3; 
+  const φ1 = toRad(lat1);
+  const φ2 = toRad(lat2);
+  const Δφ = toRad(lat2 - lat1);
+  const Δλ = toRad(lng2 - lng1);
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) *
+    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // Distance in meters
+};
+
+const checkLocationPermission = async (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject("Geolocation is not supported by your browser.");
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const distance = calculateDistance(
+          latitude,
+          longitude,
+          TARGET_LOCATION.lat,
+          TARGET_LOCATION.lng
+        );
+        if (distance >= MIN_DISTANCE && distance <= MAX_DISTANCE) {
+          resolve();
+        } else {
+          reject("คุณต้องอยู่ในSC09 อาคารวิทยวิภาส คณะวิทยาศาสตร์ มหาวิทยาลัยขอนแก่นเท่านั้น");
+        }
+      },
+      () => reject("ไม่สามารถเข้าถึงตำแหน่งของคุณได้")
+    );
+  });
+};
+
 export default function QrcodeCheckin() {
   const [scannerID, setScannerID] = useState(() => {
     if (typeof window !== "undefined") {
@@ -156,6 +202,16 @@ export default function QrcodeCheckin() {
   };
 
   const handleCheckin = async () => {
+    try {
+      await checkLocationPermission();
+    } catch (error) {
+      const errorMessage = typeof error === "string" ? error : "เกิดข้อผิดพลาด";
+      setResult(errorMessage);
+      setResultType("error");
+      toast.error(errorMessage);
+      return;
+    }
+
     if (!scannerID || !peerID) {
       setResult("กรุณากรอกรหัสนักศึกษาทั้งสองช่อง");
       setResultType("error");
@@ -181,14 +237,16 @@ export default function QrcodeCheckin() {
         toast.success("เช็คอินสำเร็จ! คุณและเพื่อนได้รับ 30 คะแนน");
         const studentData = await fetchStudentName(); // Fetch all student data
         const name = studentData[peerID] || "ไม่ทราบชื่อ"; // Ensure name is fetched or default to "ไม่ทราบชื่อ"
-        if (!name) return; 
+        if (!name) return;
 
         setRecentCheckins((prev) => {
           const updatedCheckins = [
             { id: peerID, studentID: peerID, name, checkInStatus: true },
             ...prev,
           ];
-          const uniqueCheckins = Array.from(new Map(updatedCheckins.map(item => [item.id, item])).values());
+          const uniqueCheckins = Array.from(
+            new Map(updatedCheckins.map((item) => [item.id, item])).values()
+          );
           return uniqueCheckins.slice(0, 5);
         });
         setTimeout(() => {
@@ -207,70 +265,83 @@ export default function QrcodeCheckin() {
     }
   };
 
+  let debounceTimeout: NodeJS.Timeout | null = null;
+
   const onScanSuccess = (decodedText: string) => {
-    if (hasScanned) return;
-    setHasScanned(true);
+    if (hasScanned) return; // Prevent multiple requests
+    setHasScanned(true); // Set the flag to true immediately
 
-    if (html5Qr) {
-      html5Qr.stop().catch(() => {});
-      html5Qr.clear();
-    }
-    setScanning(false);
-
-    setPeerID(decodedText);
-
-    // Focus on the input field
-    const inputField = document.querySelector("input[placeholder='กรอกรหัสนักศึกษาของเพื่อน']") as HTMLInputElement;
-    if (inputField) {
-      inputField.focus();
+    if (debounceTimeout) {
+      clearTimeout(debounceTimeout); // Clear any existing debounce timeout
     }
 
-    // Proceed with API call
-    setTimeout(async () => {
+    debounceTimeout = setTimeout(() => {
+      if (html5Qr) {
+        html5Qr.stop().catch(() => {}); // Stop the camera immediately after a successful scan
+        html5Qr.clear();
+      }
+
+      setScanning(false);
+      setTab("manual"); 
+
+      setPeerID(decodedText);
+
+      const inputField = document.querySelector("input[placeholder='กรอกรหัสนักศึกษาของเพื่อน']") as HTMLInputElement;
+      if (inputField) {
+        inputField.focus();
+      }
+
+      // Proceed with API call
       if (!scannerID || !decodedText) {
         setResult("กรุณากรอกรหัสนักศึกษาทั้งสองช่อง");
         setResultType("error");
+        setHasScanned(false); // Reset the flag if validation fails
         return;
       }
 
       if (scannerID === decodedText) {
         setResult("ไม่สามารถเช็คอินตัวเองได้");
         setResultType("error");
+        setHasScanned(false); // Reset the flag if validation fails
         return;
       }
 
-      try {
-        const res = await fetch("/api/peer-checkin", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ scannerID, peerID: decodedText }),
-        });
-        const data = await res.json();
-        if (res.ok && data.status === "success") {
-          toast.success("เช็คอินสำเร็จ! คุณและเพื่อนได้รับ 30 คะแนน");
-          const studentData = await fetchStudentName(); // Fetch all student data
-          const name = studentData[decodedText] || "ไม่ทราบชื่อ"; // Ensure name is fetched or default to "ไม่ทราบชื่อ"
-          if (!name) return; 
+      fetch("/api/peer-checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scannerID, peerID: decodedText }),
+      })
+        .then(async (res) => {
+          const data = await res.json();
+          if (res.ok && data.status === "success") {
+            toast.success("เช็คอินสำเร็จ! คุณและเพื่อนได้รับ 30 คะแนน");
+            const studentData = await fetchStudentName(); // Fetch all student data
+            const name = studentData[decodedText] || "ไม่ทราบชื่อ"; // Ensure name is fetched or default to "ไม่ทราบชื่อ"
+            if (!name) return;
 
-          setResult("เช็คอินสำเร็จ! คุณและเพื่อนได้รับ 30 คะแนน");
-          setResultType("success");
-          setRecentCheckins((prev) => [
-            { id: decodedText, studentID: decodedText, name: "", checkInStatus: true },
-            ...prev,
-          ].slice(0, 5));
-          setTimeout(() => {
-            setPeerID("");
-            setResult("");
-          }, 3000);
-        } else {
-          setResult(data.error || "เช็คอินไม่สำเร็จ");
+            setResult("เช็คอินสำเร็จ! คุณและเพื่อนได้รับ 30 คะแนน");
+            setResultType("success");
+            setRecentCheckins((prev) => [
+              { id: decodedText, studentID: decodedText, name, checkInStatus: true },
+              ...prev,
+            ].slice(0, 5));
+            setTimeout(() => {
+              setPeerID("");
+              setResult("");
+            }, 3000);
+          } else {
+            setResult(data.error || "เช็คอินไม่สำเร็จ");
+            setResultType("error");
+          }
+        })
+        .catch(() => {
+          setResult("เกิดข้อผิดพลาดในการเช็คอิน");
           setResultType("error");
-        }
-      } catch {
-        setResult("เกิดข้อผิดพลาดในการเช็คอิน");
-        setResultType("error");
-      }
-    }, 500);
+        })
+        .finally(() => {
+          setHasScanned(false); // Reset the flag after the request completes
+        });
+    }, 300); // Debounce delay of 300ms
   };
 
   const startScanning = () => {
@@ -287,6 +358,8 @@ export default function QrcodeCheckin() {
   const stopScanning = () => {
     setScanning(false);
   };
+
+
 
   return (
     <div className="min-h-screen bg-gray-50">
