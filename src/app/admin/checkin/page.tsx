@@ -151,7 +151,7 @@ export default function QrcodeCheckin() {
       setResultType("");
 
       // Ensure the 'reader' element exists before initializing the scanner
-      if (!readerRef.current) {
+      if (!readerRef.current || !document.getElementById("reader")) {
         setResult("ไม่พบองค์ประกอบสำหรับการสแกน QR Code");
         setResultType("error");
         return;
